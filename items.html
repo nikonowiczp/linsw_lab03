@@ -1,0 +1,6 @@
+{% for item in children %}
+<li>{{ item['name'] }}
+{% if "children" in item %}
+  <ul>{% module Template('items.html', children=item['children']) %}</ul>
+{% end %}</li>
+{% end %}
