@@ -4,9 +4,14 @@ import tornado.ioloop;
 import tornado.template;
 import os;
 import sys;
-from env import *
 
+adminLogin=b"admin"
+adminPassword=b"admin"
 
+cookieSecret='aaDa23dsf@#$!'
+pathToServer=sys.argv[2]
+pathToFiles=sys.argv[3]
+serverPort = sys.argv[1]
 
 class BaseHandler(tornado.web.RequestHandler):
 
@@ -76,19 +81,45 @@ class UploadHandler(tornado.web.RequestHandler):
 
         self.redirect("/list?uploaded=" + inputFile['filename']);
 
+class DownloadHandler(BaseHandler):
+    def get(self, file_name):
+        _file_dir = os.path.abspath("")+"/my/path/downloads"
+        _file_path = "%s/%s" % (_file_dir, file_name)
+        if not file_name or not os.path.exists(_file_path):
+            raise HTTPError(404)
+        self.set_header('Content-Type', 'application/force-download')
+        self.set_header('Content-Disposition', 'attachment; filename=%s' % file_name)    
+        with open(_file_path, "rb") as f:
+            try:
+                while True:
+                    _buffer = f.read(4096)
+                    if _buffer:
+                        self.write(_buffer)
+                    else:
+                        f.close()
+                        self.finish()
+                        return
+            except:
+                raise HTTPError(404)
+        raise HTTPError(500)
+
 def make_results_tree(path):
-    tree = dict(name=path[(len(pathToServer) - 1):], children=[])
+    tree = dict(name=path[(len(pathToFiles) - 1):], children=[])
     lst = os.listdir(path)
     for name in lst:
         fn = os.path.join(path, name)
+        dispSplit=fn.split(pathToFiles);
+        dispName=fn
+
+        dispName = fn[len(pathToFiles):]
         if os.path.isdir(fn):
             tree['children'].append(make_results_tree(fn))
         else:
-            tree['children'].append(dict(name=name))
+            tree['children'].append(dict(name=dispName))
+            
     return tree
 
-if (len(sys.argv) != 3):
-    print("Usage: ./server.py [port] [pathToServer]");
+if (len(sys.argv) != 4):
     exit();
 
 
